@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A superseded run tells you nothing; cancel it rather than pay for it.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  UV_VERSION: "0.11.32"
+
+jobs:
+  test:
+    name: Lint and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/${UV_VERSION}/install.sh | sh
+
+      - name: Install the pinned toolchain
+        run: uv python install
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Check formatting and lint rules
+        run: |
+          uv run ruff format --check .
+          uv run ruff check .
+
+      - name: Run tests
+        run: uv run pytest
+
+  image:
+    name: Build image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: docker build -t dropzone:${{ github.sha }} .
+
+      # A container that builds but exits on startup is a broken release that
+      # passed CI, so the image has to answer before this job is called green.
+      - name: Verify the container serves
+        run: |
+          docker run -d --name dropzone -p 8000:8000 dropzone:${{ github.sha }}
+          for _ in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8000/health; then
+              echo && echo "container is serving" && exit 0
+            fi
+            sleep 1
+          done
+          echo "container did not become healthy" >&2
+          docker logs dropzone >&2
+          exit 1
+
+      - name: Stop
+        if: always()
+        run: docker rm -f dropzone || true

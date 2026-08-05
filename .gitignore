@@ -1,0 +1,60 @@
+# Working notes and source material, not part of the deliverable
+research/
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.tox/
+
+# Node / Hardhat
+node_modules/
+artifacts/
+cache/
+typechain/
+typechain-types/
+coverage/
+coverage.json
+npm-debug.log*
+yarn-error.log*
+
+# Foundry
+out/
+broadcast/
+lib/forge-std/
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+pgdata/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
