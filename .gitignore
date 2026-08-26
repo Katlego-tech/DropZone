@@ -41,7 +41,6 @@ yarn-error.log*
 # Foundry
 out/
 broadcast/
-lib/forge-std/
 
 # Databases
 *.db
