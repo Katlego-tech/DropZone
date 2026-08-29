@@ -13,7 +13,12 @@ htmlcov/
 .coverage
 .coverage.*
 node_modules/
-artifacts/
+contracts/
+lib/
+out/
+broadcast/
+foundry.toml
+foundry.lock
 cache/
 .env
 .env.*

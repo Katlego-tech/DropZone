@@ -15,6 +15,7 @@ permissions:
 
 env:
   UV_VERSION: "0.11.32"
+  FOUNDRY_VERSION: "v1.7.1"
 
 jobs:
   test:
@@ -67,3 +68,34 @@ jobs:
       - name: Stop
         if: always()
         run: docker rm -f dropzone || true
+
+  contract:
+    name: Build and test the contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # forge-std is a submodule. Without this the build fails on an
+          # unresolvable import, which reads like a code problem and is not one.
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: ${{ env.FOUNDRY_VERSION }}
+
+      - name: Check formatting
+        run: forge fmt --check
+
+      - name: Build
+        run: forge build
+
+      # Ahead of the linter, deliberately. forge lint updates the build cache
+      # without writing artefacts, so a lint step placed before this one leaves
+      # forge test with nothing to run - and a suite that runs zero tests reports
+      # exactly the same green as one that passes.
+      - name: Run tests
+        run: forge test -vv
+
+      - name: Lint
+        run: forge lint

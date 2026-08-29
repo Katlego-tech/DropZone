@@ -27,12 +27,8 @@ htmlcov/
 coverage.xml
 .tox/
 
-# Node / Hardhat
+# Node - the iteration 4 frontend
 node_modules/
-artifacts/
-cache/
-typechain/
-typechain-types/
 coverage/
 coverage.json
 npm-debug.log*
@@ -41,6 +37,7 @@ yarn-error.log*
 # Foundry
 out/
 broadcast/
+cache/
 
 # Databases
 *.db
