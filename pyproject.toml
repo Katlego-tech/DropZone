@@ -33,6 +33,10 @@ filterwarnings = ["error"]
 line-length = 100
 src = ["src", "tests"]
 
+# Vendored dependencies. The forge-std submodule ships Python scripts of its own,
+# and linting somebody else's code produces failures nobody here can act on.
+extend-exclude = ["lib"]
+
 [tool.ruff.lint]
 select = [
     "E",   # pycodestyle
