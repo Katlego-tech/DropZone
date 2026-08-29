@@ -34,13 +34,21 @@ Step 3 is the one that matters, and the one the naive version skips.
 
 ## Status
 
-Iteration 0 — repo, build pipeline, and a health endpoint. Nothing is deployed and there's no
-run command to give you yet.
+Iteration 1 — the contract is written and tested. `AccessPass` sells time-limited passes for
+ETH; 29 tests cover it, including a hostile receiver that fails to reenter `withdraw`. Nothing
+is deployed to a public network yet, and the API is still just a health endpoint.
 
-I'm writing this README ahead of the code deliberately. The decisions below are what I want
-argued with, and they're much cheaper to change now than after they're compiled. It'll grow as
-the project does: the threat model, the architecture and the API reference belong here once
-there's something real behind them, not before.
+```sh
+make install        # pinned Python dependencies
+make test           # the API suite
+make contracts      # format, build, test and lint the contract
+make anvil          # a local chain, in another shell
+make deploy-local   # deploy to it
+```
+
+The threat model, the architecture diagram and the API reference belong here once there's
+something real behind them. The decisions below are what I want argued with, and they're
+cheaper to change now than after they've shipped.
 
 ## What I'm deciding as I go
 
@@ -104,6 +112,21 @@ So the contract is tested locally, the API is tested against a fake chain, and S
 integration and the demo happen. CI never touches the network.
 [ADR 0003](docs/adr/0003-where-tests-run.md).
 
+### Foundry, not Hardhat
+
+I planned this with Hardhat and changed my mind, so it's worth saying why rather than quietly
+shipping the other thing. Hardhat's real advantage is that the contract, the scripts and the
+frontend all speak JavaScript — which is worth a lot on a Node backend, and nothing here,
+because [the backend is Python](#python-now-java-and-spring-boot-later). Two ecosystems either
+way, so the question became which second one to pay for.
+
+For testing a contract it's Solidity. The reentrancy attacker *is* a contract, so writing it in
+the same language as the test driving it removes a boundary from the most subtle test in the
+suite. Reverts are compared by error selector and arguments rather than by matching strings.
+And fuzzing costs a function signature instead of another dependency — two of the 29 tests
+wouldn't exist if they'd been more expensive to write.
+[ADR 0004](docs/adr/0004-foundry-over-hardhat.md).
+
 ### Still open
 
 - **How many confirmations before access is granted.** A purchase can be undone by a chain
@@ -131,10 +154,10 @@ of them make the guarantee real. It's a limit of the model, not a defect in this
 
 Working software at the end of each iteration.
 
-1. **Skeleton** — repo, CI running an empty test suite, container build, health endpoint.
-   Prove the pipeline is green before there's anything to break.
-2. **The contract** — buying a pass, expiry, renewal that extends rather than resets, and
-   only the owner being able to withdraw. Tested against a local chain.
+1. **Skeleton** *(done)* — repo, CI running an empty test suite, container build, health
+   endpoint. Prove the pipeline is green before there's anything to break.
+2. **The contract** *(done)* — buying a pass, expiry, renewal that extends rather than
+   resets, and only the owner being able to withdraw. Tested against a local chain.
 3. **The handshake** — challenge, signature verification and sessions, tested end to end
    against a fake chain so the suite needs no network.
 4. **The real chain** — reading live contract state, and keeping a local projection of it in
@@ -144,8 +167,8 @@ Working software at the end of each iteration.
 
 ## Built with
 
-Python and FastAPI for the API, Solidity for the contract, PostgreSQL for state, Docker for
-delivery, deployed to the Sepolia testnet. Versions are pinned rather than floated.
+Python and FastAPI for the API, Solidity and Foundry for the contract, PostgreSQL for state,
+Docker for delivery, deployed to the Sepolia testnet. Versions are pinned rather than floated.
 
 ## Sources
 
@@ -155,3 +178,4 @@ delivery, deployed to the Sepolia testnet. Versions are pinned rather than float
 - [Solidity documentation](https://docs.soliditylang.org/) and
   [OpenZeppelin Contracts](https://github.com/OpenZeppelin/openzeppelin-contracts)
 - [Consensys smart contract best practices](https://consensys.github.io/smart-contract-best-practices/)
+- [Foundry Book](https://getfoundry.sh/) - cheatcodes, fuzzing, and forge script
