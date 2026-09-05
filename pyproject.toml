@@ -4,7 +4,13 @@ version = "0.1.0"
 description = "Time-limited access passes, bought on-chain and enforced off-chain"
 requires-python = "==3.14.*"
 dependencies = [
+    # eth-utils computes EIP-55 checksums with keccak, and ships no keccak
+    # backend of its own. Without this the address helper raises ImportError
+    # on its first call - at runtime, in the request path, not at import.
+    "eth-hash[pycryptodome]==0.8.0",
+    "eth-utils==6.0.0",
     "fastapi==0.141.1",
+    "pydantic-settings==2.15.0",
     "uvicorn[standard]==0.52.1",
 ]
 
@@ -43,11 +49,16 @@ select = [
     "F",   # pyflakes
     "I",   # import sorting
     "B",   # bugbear
+    # Naive datetimes are the bug class this project turns on: a pass expiry
+    # compared against a naive "now" either raises or is silently wrong by
+    # whatever the server's offset happens to be.
+    "DTZ", # flake8-datetimez
     "UP",  # pyupgrade
     "S",   # bandit: security lints
     "RUF",
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# Assertions are the point of a test file.
-"tests/**" = ["S101"]
+# Assertions are the point of a test file, and a suite that proves a weak
+# secret is rejected has to contain one to be rejected.
+"tests/**" = ["S101", "S105", "S106"]
