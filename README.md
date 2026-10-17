@@ -50,6 +50,53 @@ The threat model, the architecture diagram and the API reference belong here onc
 something real behind them. The decisions below are what I want argued with, and they're
 cheaper to change now than after they've shipped.
 
+## Run it
+
+You need [uv](https://docs.astral.sh/uv/), which also fetches the pinned Python 3.14, and
+[Foundry](https://book.getfoundry.sh/getting-started/installation) if you want to build or
+deploy the contract.
+
+```sh
+git clone --recurse-submodules https://github.com/Katlego-tech/DropZone.git
+cd DropZone
+make install
+cp .env.example .env
+```
+
+Then put a real secret in `DROPZONE_JWT_SECRET` in `.env`. The placeholder is long enough to
+pass the 32-character check, so nothing stops you running with it, and anyone who has read
+`.env.example` could then mint a session:
+
+```sh
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+Start the API and open the interactive docs at <http://localhost:8000/docs>:
+
+```sh
+make serve
+```
+
+| Endpoint | What it does |
+|---|---|
+| `GET /health` | Liveness check |
+| `GET /auth/challenge?address=0x…` | Issues a single-use challenge bound to that address |
+| `POST /auth/verify` | Exchanges a signed EIP-4361 message for a session token |
+| `GET /content` | The protected dataset; needs `Authorization: Bearer <token>` |
+
+Until the real chain lands (step 4 of the roadmap), a local run uses the same in-memory chain
+as the tests, and it starts empty. Nobody holds a pass, so `/auth/verify` answers 402 for every
+address. To see the whole handshake succeed, read `test_happy_path_access_flow` in
+`tests/test_acceptance.py`: it buys a pass on the fake chain, signs the challenge and fetches
+the content.
+
+To run it in a container instead:
+
+```sh
+make image
+docker run --rm -p 8000:8000 --env-file .env dropzone:local
+```
+
 ## What I'm deciding as I go
 
 Each of these gets a proper write-up under [`docs/adr/`](docs/adr/) as it's decided.
