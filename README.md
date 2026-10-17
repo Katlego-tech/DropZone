@@ -34,13 +34,16 @@ Step 3 is the one that matters, and the one the naive version skips.
 
 ## Status
 
-Iteration 1 — the contract is written and tested. `AccessPass` sells time-limited passes for
-ETH; 29 tests cover it, including a hostile receiver that fails to reenter `withdraw`. Nothing
-is deployed to a public network yet, and the API is still just a health endpoint.
+Iteration 2 — the handshake is complete and tested. `AccessPass` sells time-limited
+passes for ETH (29 Foundry tests); the API implements EIP-4361 challenge-response
+authentication, atomic nonce replay protection, pass verification, and JWT session tokens
+clamped to pass expiry (135 Python tests, 100% test coverage). The entire suite runs against
+an in-memory chain gateway with no live RPC node required.
 
 ```sh
 make install        # pinned Python dependencies
-make test           # the API suite
+make test           # the API suite (135 tests)
+make cov            # coverage report (100% across all modules)
 make contracts      # format, build, test and lint the contract
 make anvil          # a local chain, in another shell
 make deploy-local   # deploy to it
@@ -174,6 +177,15 @@ And fuzzing costs a function signature instead of another dependency — two of 
 wouldn't exist if they'd been more expensive to write.
 [ADR 0004](docs/adr/0004-foundry-over-hardhat.md).
 
+### Session lifetime and pass expiry clamping
+ 
+Authentication exchanges an EIP-4361 signature for a short-lived bearer JWT. Session duration
+is capped at 15 minutes to balance wallet prompt fatigue against revocation latency, and is
+strictly clamped to `min(now + session_ttl, pass_expiry)` so that a session can never outlive
+the on-chain pass that justified it. Nonces are 128-bit random challenges popped atomically
+on first read to defeat replay attacks. Full reasoning in
+[ADR 0005](docs/adr/0005-session-lifetime-and-clamping.md).
+
 ### Still open
 
 - **How many confirmations before access is granted.** A purchase can be undone by a chain
@@ -181,7 +193,6 @@ wouldn't exist if they'd been more expensive to write.
   and feels broken to someone who just paid.
 - **Asking the chain per request, or keeping my own copy.** One is simple and slow, the other
   is fast and eventually consistent. The usual cache-over-a-system-of-record trade.
-- **How long a session should last.** Fewer wallet prompts against slower revocation.
 
 None of these have a correct answer, only a defended one. That's why they're getting written
 down rather than decided silently in a commit.
@@ -205,10 +216,11 @@ Working software at the end of each iteration.
    endpoint. Prove the pipeline is green before there's anything to break.
 2. **The contract** *(done)* — buying a pass, expiry, renewal that extends rather than
    resets, and only the owner being able to withdraw. Tested against a local chain.
-3. **The handshake** — challenge, signature verification and sessions, tested end to end
-   against a fake chain so the suite needs no network.
-4. **The real chain** — reading live contract state, and keeping a local projection of it in
-   step with the network.
+3. **The handshake** *(done)* — EIP-4361 challenge, signature verification, atomic nonces,
+   and JWT sessions clamped to pass expiry, tested end to end against a fake chain so the
+   suite needs no network.
+4. **The real chain** — reading live contract state via RPC, and keeping a local projection of it
+   in step with the network.
 5. **Surface and ship** — a minimal frontend, deployment to a public testnet, and one command
    that runs the whole thing.
 

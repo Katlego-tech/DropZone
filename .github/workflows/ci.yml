@@ -54,7 +54,7 @@ jobs:
       # passed CI, so the image has to answer before this job is called green.
       - name: Verify the container serves
         run: |
-          docker run -d --name dropzone -p 8000:8000 dropzone:${{ github.sha }}
+          docker run -d --name dropzone -p 8000:8000 -e DROPZONE_JWT_SECRET=this-is-a-valid-signing-secret-for-ci-tests-at-least-32-chars dropzone:${{ github.sha }}
           for _ in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:8000/health; then
               echo && echo "container is serving" && exit 0
