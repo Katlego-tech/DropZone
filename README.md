@@ -159,7 +159,8 @@ provider has a bad minute, and those failures look identical to real ones — a 
 goes red because of the weather teaches you to ignore red pipelines.
 
 So the contract is tested locally, the API is tested against a fake chain, and Sepolia is where
-integration and the demo happen. CI never touches the network.
+integration and the demo will happen once the real chain lands (step 4 of the roadmap). CI never
+touches the network.
 [ADR 0003](docs/adr/0003-where-tests-run.md).
 
 ### Foundry, not Hardhat
@@ -226,8 +227,15 @@ Working software at the end of each iteration.
 
 ## Built with
 
-Python and FastAPI for the API, Solidity and Foundry for the contract, PostgreSQL for state,
-Docker for delivery, deployed to the Sepolia testnet. Versions are pinned rather than floated.
+Python and FastAPI for the API, Solidity and Foundry for the contract, Docker for delivery.
+Versions are pinned rather than floated. The contract is deployed to a local Anvil chain only.
+
+Planned, not built yet:
+
+- **PostgreSQL for state.** Challenge nonces are held in memory today, so they don't survive a
+  restart or work across more than one process.
+- **Deployment to the Sepolia testnet**, with the API reading the live contract (steps 4 and 5
+  of the roadmap).
 
 ## Sources
 
